@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
+    <title>za_lupa</title>
+</head>
+
+<body class="my-5 container">
+    <div class=" d-flex flex-justify-around flex-wrap">
+        <div class="d-flex flex-nowrap w-100 flex-justify-between my-3">
+            <button type="button" id="Get_Owner" class="btn w-50 me-2  my-0 btn-success">Get</button>
+            <button type="button" id="Set_Owner" class="btn w-50 ms-2 my-0 btn-warning">Set</button>
+        </div>
+        <button type="button" id="Check_Address" class="btn btn-danger w-100">Check address</button>
+    </div>
+
+    <div class="mb-3 my-5">
+        <label for="exampleInputPassword1" class="form-label">Set Address</label>
+        <input type="text" id="inputAddress" class="form-control">
+    </div>
+    <div class="mb-3">
+        <span>Address:</span>
+
+        <div class="text_address"></div>
+        <div class="text_warning"></div>
+        <div class="status"></div>
+
+    </div>
+
+    <script src="src/web3.min.js"></script>
+    <script src="src/jquery.min.js"></script>
+    <script>
+        //init web3
+        if (typeof (web3) !== 'undefined') {
+            web3 = new Web3(web3.currentProvider)
+        } else {
+            web3 = new Web3(new Web3.providers.HttpProvider("https://localhost:8545"));
+        }
+        //out put var address
+        const outPutAddress = $(".text_address");
+        const outPutWarning = $(".text_warning");
+        const status = $(".status");
+
+        //init event func
+        $("#Get_Owner").click(getOwner);
+        $("#Set_Owner").click(setOwner);
+        $("#Check_Address").click(checkAddress);
+
+        //функция получения данных контракта  
+        async function getData() {
+            const jsonData = await fetch("../build/contracts/Owner.json")
+            return await jsonData.json();
+        }
+        //функция получения владельца контракта  
+        async function getOwner() {
+            const jsonData = await getData();
+            console.log(jsonData.abi);
+            const contract = new web3.eth.Contract(jsonData.abi, '0x547E70E6b69b2C02b60d53569ed96C71B9687293');
+            console.log(contract)
+            const methodsContract = await contract.methods
+            console.log(methodsContract)
+            outPutAddress.html('<div class="alert alert-success text_address " role="alert">' + await methodsContract.getOwner().call() + '</div>');
+        }
+        //функция изменения владельца контракта  
+        async function setOwner() {
+            const jsonData = await getData();
+            console.log(jsonData.abi);
+            const contract = new web3.eth.Contract(jsonData.abi, '0x547E70E6b69b2C02b60d53569ed96C71B9687293');
+            console.log(contract)
+            const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
+            console.log(accounts)
+            const methodsContract = await contract.methods
+            console.log(methodsContract)
+            const inputAddress = $('#inputAddress').val();
+            console.log(inputAddress)
+            console.log(methodsContract.getOwner().call())
+            const transcation = methodsContract.changeOwner(inputAddress).send({
+                from: await methodsContract.getOwner().call()
+            });
+            console.log(await transcation)
+            outPutWarning.html('<div class="alert alert-warning text_warning " role="alert">' + JSON.stringify(await transcation) + '</div>');
+        }
+        //Функция проверки на соотвествии адреса контракта и метамаска
+        async function checkAddress() {
+            const jsonData = await getData();
+            const contract = new web3.eth.Contract(jsonData.abi, '0x56Ed0c20EA733bdb3a121711FF8C5984Ee43A672');
+            const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
+            const addressSM = await contract.methods.getOwner().call()
+            if (await addressSM === accounts) {
+                status.html('<div class="alert alert-success text_address " role="alert">APPROVE</div>');
+            } else {
+                status.html('<div class="alert alert-danger " role="alert">You can changed only if you owner of smart-contract <br/> Your address is ' + accounts + ' <br/> Smart-contract address is ' + addressSM + ' </div>');
+            }
+        }
+    </script>
+
+
+
+</body>
+
+</html>
